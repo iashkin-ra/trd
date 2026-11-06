@@ -1,0 +1,41 @@
+AVX:
+
+#pragma GCC target("avx2")
+#include <immintrin.h>
+
+__m256i - integers (int, char, long long)
+__m256 - floats (float, 8 elements)
+__m256d - double-precision floats (double, 4 elements)
+
+Format: _mm256_NAME_SUFFIX
+_epi8 / _epi16 / _epi32 / _epi64 - signed ingegers (8, 16, 32, 64 bits).
+_epu8 / _epu16 / _epu32 / _epu64 - unsigned integers.
+_ps - Packed Single (float).
+_pd - Packed Double (double).
+_si256 - operation on the entire 256-bit vector (usually in bitwise operations).
+
+
+setzero_si256() - vector of zeroes.
+set1_epi32(x) - fill all elements with x.
+set_epi32(v7, ..., v0) - set values manually (ATTENTION: REVERSED ORDER).
+loadu_si256((__m256i*)ptr) - load from memory (unaligned, save from RE).
+storeu_si256((__m256i*)ptr, v) - save to memory (unaligned).
+Arithmetics (replace epi32 with needed type):
+add_epi32(a, b) / sub_epi32(a, b) - addition/subtraction
+mullo_epi32(a, b) - multiplication (lowest 32 bits of the result).
+mul_ps(a, b) / div_ps(a, b) - multiplication and division for float (no division for int!).
+min_epi32(a, b) / max_epi32(a, b) - minimum / maximum of elements.
+bitwise operations (common for __m256i):
+and_si256(a, b) / or_si256(a, b) / xor_si256(a, b) - bitwise AND, OR, XOR.
+andnot_si256(a, b) -  (~a) & b.
+slli_epi32(a, k) / srli_epi32(a, k) - bitshift << and >> of every element by constant k.
+comparisons:
+cmpeq_epi32(a, b) - a == b.
+cmpgt_epi32(a, b) - a > b.
+
+
+blendv_epi8(a, b, mask) - ternary operator: if most significant bit of the byte in mask is 1, takes byte from b, else from a. Speeds up if in cycles.
+movemask_epi8(a) - (best feature from strings/search). Takes most singificant bit from each of 32 bytes and compiles them into 1 32-bit integer. (Works good with __builtin_popcount or __builtin_ctz).
+Shuffles:
+shuffle_epi8(a, mask) - parallel lookup. Replaces a[i] with a[mask[i]] in 16-byte blocks.
+permutevar8x32_epi32(a, mask) - replaces 32-bit ints over the entire 256-bit vector according to indices in mask.

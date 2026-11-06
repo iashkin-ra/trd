@@ -1,28 +1,37 @@
 /**
- * Author: Simon Lindholm
- * Date: 2016-03-22
- * License: CC0
- * Source: hacKIT, NWERC 2015
- * Description: A set (not multiset!) with support for finding the n'th
- * element, and finding the index of an element.
- * To get a map, change \texttt{null\_type}.
- * Time: O(\log N)
+ * 
+ * Author: AI i think, sent by Anton Borodikhin
+ * 
+ * Description: Stuff from pbds library
+ * 
  */
 #pragma once
 
-#include <bits/extc++.h> /** keep-include */
+#include <ext/pb_ds/assoc_container.hpp> /** keep-include */
+#include <ext/pb_ds/tree_policy.hpp> /** keep-include */
+
 using namespace __gnu_pbds;
 
-template<class T>
-using Tree = tree<T, null_type, less<T>, rb_tree_tag,
-    tree_order_statistics_node_update>;
+template<typename T>
+using ordered_set = tree<T, null_type, less<T>, rb_tree_tag, tree_order_statistics_node_update>;
 
-void example() {
-	Tree<int> t, t2; t.insert(8);
-	auto it = t.insert(10).first;
-	assert(it == t.lower_bound(9));
-	assert(t.order_of_key(10) == 1);
-	assert(t.order_of_key(11) == 2);
-	assert(*t.find_by_order(0) == 8);
-	t.join(t2); // assuming T < T2 or T > T2, merge t2 into t
-}
+struct custom_hash {
+    static uint64_t splitmix64(uint64_t x) {
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+    size_t operator()(uint64_t x) const {
+        static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+template<typename K, typename V>
+using fast_map = gp_hash_table<K, V, custom_hash>;
+
+template<typename T>
+using pairing_heap = __gnu_pbds::priority_queue<T, std::less<T>, pairing_heap_tag>;
+// auto it = pq.push(5);
+// pq.modify(it, 10);

@@ -1,41 +1,86 @@
 /**
- * Author: 罗穗骞, chilli
- * Date: 2019-04-11
- * License: Unknown
- * Source: Suffix array - a powerful tool for dealing with strings
- * (Chinese IOI National team training paper, 2009)
- * Description: Builds suffix array for a string.
- * \texttt{sa[i]} is the starting index of the suffix which
- * is $i$'th in the sorted suffix array.
- * The returned vector is of size $n+1$, and \texttt{sa[0] = n}.
- * The \texttt{lcp} array contains longest common prefixes for
- * neighbouring strings in the suffix array:
- * \texttt{lcp[i] = lcp(sa[i], sa[i-1])}, \texttt{lcp[0] = 0}.
- * The input string must not contain any nul chars.
- * Time: O(n \log n)
- * Status: stress-tested
+ * Author: Anton
+ * Description: Builds a suffix array and LCP of a string.
+ * Time: O(N log N)
  */
-#pragma once
 
-struct SuffixArray {
-	vi sa, lcp;
-	SuffixArray(string s, int lim=256) { // or vector<int>
-		s.push_back(0); int n = sz(s), k = 0, a, b;
-		vi x(all(s)), y(n), ws(max(n, lim));
-		sa = lcp = y, iota(all(sa), 0);
-		for (int j = 0, p = 0; p < n; j = max(1, j * 2), lim = p) {
-			p = j, iota(all(y), n - j);
-			rep(i,0,n) if (sa[i] >= j) y[p++] = sa[i] - j;
-			fill(all(ws), 0);
-			rep(i,0,n) ws[x[i]]++;
-			rep(i,1,lim) ws[i] += ws[i - 1];
-			for (int i = n; i--;) sa[--ws[x[y[i]]]] = y[i];
-			swap(x, y), p = 1, x[sa[0]] = 0;
-			rep(i,1,n) a = sa[i - 1], b = sa[i], x[b] =
-				(y[a] == y[b] && y[a + j] == y[b + j]) ? p - 1 : p++;
-		}
-		for (int i = 0, j; i < n - 1; lcp[x[i++]] = k)
-			for (k && k--, j = sa[x[i] - 1];
-					s[i + k] == s[j + k]; k++);
-	}
-};
+template<typename T>
+std::vector<std::size_t>  suffix_array(std::size_t n, const T &s) {
+    std::vector<std::size_t> sa(n);
+    if (n == 0) {
+        return sa;
+    }
+    iota(sa.begin(), sa.end(), 0);
+    std::sort(sa.begin(), sa.end(), [&s](std::size_t i, std::size_t j) {
+        return s[i] < s[j];
+    });
+    std::vector<std::size_t> sorted_by_second(n);
+    std::vector<std::size_t> group(n), ptr_group(n), new_group(n);
+    for (std::size_t i = 1; i < n; ++i) {
+        group[sa[i]] = group[sa[i - 1]];
+        if (s[sa[i - 1]] != s[sa[i]]) {
+            ++group[sa[i]];
+        }
+    }
+    std::size_t cnt = group[sa.back()] + 1;
+    std::size_t step = 1;
+    while (cnt < n) {
+        std::size_t at = 0;
+        for (std::size_t i = n - step; i < n; ++i) {
+            sorted_by_second[at++] = i;
+        }
+        for (std::size_t i = 0; i < n; ++i) {
+            if (i == 0 || group[sa[i]] != group[sa[i - 1]]) {
+                ptr_group[group[sa[i]]] = i;
+            }
+            if (sa[i] >= step) {
+                sorted_by_second[at++] = sa[i] - step;
+            }
+        }
+        for (std::size_t i = 0; i < n; ++i) {
+            std::size_t x = sorted_by_second[i];
+            sa[ptr_group[group[x]]++] = x;
+        }
+        new_group[sa[0]] = 0;
+        for (std::size_t i = 1; i < n; ++i) {
+            if (group[sa[i]] != group[sa[i - 1]]) {
+                new_group[sa[i]] = new_group[sa[i - 1]] + 1;
+            } else {
+                std::size_t prv = sa[i - 1] + step >= n ? n : group[sa[i - 1] + step];
+                std::size_t cur = sa[i] + step >= n ? n : group[sa[i] + step];
+                new_group[sa[i]] = new_group[sa[i - 1]] + (prv != cur);
+            }
+        }
+        group.swap(new_group);
+        cnt = group[sa.back()] + 1;
+        step <<= 1;
+    }
+    return sa;
+}
+
+template<typename T>
+std::vector<std::size_t> build_lcp(std::size_t n, const T &s, const std::vector<std::size_t> &sa) {
+    if (n < 2) {
+        return {};
+    }
+    std::vector<std::size_t> pos(n);
+    for (std::size_t i = 0; i < n; ++i) {
+        pos[sa[i]] = i;
+    }
+    std::vector<std::size_t> lcp(n - 1);
+    for (std::size_t i = 0, len = 0; i < n; ++i) {
+        if (len > 0) {
+            --len;
+        }
+        if (pos[i] == n - 1) {
+            len = 0;
+            continue;
+        }
+        std::size_t j = sa[pos[i] + 1];
+        while (i + len < n && j + len < n && s[i + len] == s[j + len]) {
+            ++len;
+        }
+        lcp[pos[i]] = len;
+    }
+    return lcp;
+}
